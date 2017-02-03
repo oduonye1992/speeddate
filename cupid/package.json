@@ -1,0 +1,19 @@
+{
+  "name": "cupid",
+  "version": "1.0.0",
+  "description": "mating room",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Daniel Oduonye",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.10.2",
+    "socket.io": "^1.4.6"
+  },
+  "devDependencies": {
+    "moment": "^2.14.1",
+    "mysql": "^2.11.1"
+  }
+}
