@@ -22,13 +22,18 @@ Route::group(['prefix' => 'auth'], function () {
 });
 
 // M A N A G E  P R O F I L E
-Route::put('profile', 'RoomController@UpdateProfile')->middleware('api.auth');;
-Route::get('profile', 'RoomController@getProfile')->middleware('api.auth');;
+Route::put('profile', 'RoomController@UpdateProfile')->middleware('api.auth');
+Route::get('profile', 'RoomController@getProfile')->middleware('api.auth');
 
 // M A N A G E  C A T E G O R I E S
 Route::group(['prefix' => 'category'], function () {
     Route::post('', 'RoomController@createCategory');
     Route::get('', 'RoomController@getCategory');
+});
+
+Route::group(['prefix' => 'chat'], function () {
+    Route::put('', 'ChatController@add')->middleware('api.auth');
+    Route::get('', 'ChatController@read')->middleware('api.auth');
 });
 
 // G E T  A L L  R O O M S

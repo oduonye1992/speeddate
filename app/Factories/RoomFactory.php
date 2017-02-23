@@ -68,6 +68,7 @@ class RoomFactory {
                 }
                 $id = $match['matcher_id'];
                 $ma = $match['matcher'];
+                $ma['id'] = $match['id'];
                 $profile = Profile::findOrFail($id);
                 $ma['profile'] = $profile;
                 array_push($friends, $ma);
@@ -78,6 +79,7 @@ class RoomFactory {
                 }
                 $id = $match['user_id'];
                 $ma = $match['user'];
+                $ma['id'] = $match['id'];
                 $profile = Profile::findOrFail($id);
                 $ma['profile'] = $profile;
                 array_push($friends, $ma);
