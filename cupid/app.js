@@ -5,6 +5,8 @@ var io                      = require('socket.io')(http);
 var mysql                   = require("mysql"); // Sorry I don't just fancy the whole mongo stuff
 var moment                  = require('moment');
 var port                    = 8012;
+var runningInstances = [];
+var pattern = 'dddd[,] MMMM Do YYYY h:mm A';
 var connectionDetails = {
     host: "localhost",
     port:"3307",
@@ -12,21 +14,12 @@ var connectionDetails = {
     password: "s0ftware!",
     database: "sd"
 };
+var con = mysql.createConnection(connectionDetails);
 var ROOM_STATUS = {
     PENDING : 0,
     ACTIVE : 1,
     END : 2
 };
-var con = mysql.createConnection(connectionDetails);
-function query(sql, successCB, errorCB){
-    con.query(sql,function(err,rows){
-        if(err) throw err;
-        // TODO Call errorCB
-        if (successCB){
-            successCB(rows);
-        }
-    });
-}
 var CONSTANTS = {
     MESSAGE     : 'new_message',
     MESSAGE_FOR_ME     : 'recieved_message',
@@ -49,29 +42,39 @@ var CONSTANTS = {
     MATCHING : 'matching_users',
     SEARCHING : 'No_Candidate_at_the_moment'
 };
-var pattern = 'dddd[,] MMMM Do YYYY h:mm A';
-function isValidDate(start_date, end_date){
+
+var query = function(sql, successCB, errorCB){
+    con.query(sql,function(err,rows){
+        if(err) throw err;
+        // TODO Call errorCB
+        if (successCB){
+            successCB(rows);
+        }
+    });
+};
+var isValidDate = function(start_date, end_date){
     return true;
     var startDate = moment(start_date, pattern);
     var endDate = moment(end_date, pattern);
     var currentDate = moment();
     return currentDate.isAfter(startDate) && currentDate.isBefore(endDate);
-}
-function format(id){
-    return "user_"+id;
-}
-function strip(userString){
-    return userString.split('_')[1];
-}
-
-
-
-
+};
+var format = function(id){
+    // return "user_"+id;
+    return id;
+};
+var strip = function(userString){
+    return userString;
+    // return userString.split('_')[1];
+};
+var updateRoomStatus = function(roomID, status){
+    var sql = "UPDATE rooms set STATUS = "+status+" WHERE ID = "+roomID;
+    query(sql);
+};
 
 var Cupids = function(_roomOptions){
     var room = _roomOptions.id;
     var roomObj = _roomOptions;
-    //TODO Overide all these settings with the settings from the room
     var timerCountdown          = 40;//seconds
     var timerCountdownMs        = timerCountdown*1000;//ms
     var timerWaitingperiod      = 10;//seconds
@@ -80,7 +83,8 @@ var Cupids = function(_roomOptions){
     var reconnectionTimerMs     = reconnectionTimer*1000;
     var chatInProgress          = false;
     var rooms                   = []; // not in use for now
-    var nsp = io.of('/'+roomObj.id);
+    var nsp                     = io.of('/'+roomObj.id);
+
     var Timer = function(){
         var index = 0;
         return {
@@ -99,14 +103,16 @@ var Cupids = function(_roomOptions){
             }
         }
     }();
-    function cupid(){
+
+    var cupid = function(){
         console.log('Cupid is starting');
         Users.sendBroadcast(CONSTANTS.INTERNAL, 'Preparing all users');
         Users.sendBroadcast(CONSTANTS.MATCHING);
         var aa = function(){
-            chatInProgress = false;
             console.log('disconnecting all users');
             Users.resetUsers();
+            console.log('Removing inactive socket connections');
+            Users.weedOutInactiveSockets();
             Users.sendBroadcast(CONSTANTS.INTERNAL, 'Matching you with a partner...');
             console.log('Shuffling users');
             Users.newShuffle();
@@ -119,33 +125,18 @@ var Cupids = function(_roomOptions){
         setTimeout(function(){
             aa();
         }, 5000);
-    }
-    function shuffle(o){
-        for (var j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
-        return o;
-    }
-    function saveMatch(user1, user2, roomID){
+    };
+
+    var saveMatch = function(user1, user2, roomID){
         var sql = "INSERT INTO matches (user_id, matcher_id, room_id) VALUES ("+strip(user1)+","+strip(user2)+", "+roomID+" )";
         console.log(sql);
         query(sql, function(){
             console.log('saved matches in room '+roomID+' between '+user1+' and '+user2);
         });
-    }
+    };
+
     var Users = function(){
         var users = {};
-        var updateSocket = function(cred, socket){
-            if (users[cred.id]){
-                users[cred.id]['socket'] = socket;
-                users[cred.id]['sockets'].push(socket);
-                return true;
-            }
-            return false;
-        };
-        var deleteSocket = function(cred, socket){
-            if (users[cred.username]){
-                delete users[cred.username];
-            }
-        };
         var resetUsers = function(){
             // I hope you got the girl man
             for(var key in users){
@@ -155,30 +146,24 @@ var Cupids = function(_roomOptions){
             }
             rooms = [];
         };
-        var connectUsers =  function(user1, user2){
-            users[user1].meta.connected = user2;
-            users[user1].meta.connected = user1;
-            rooms.push(user1+'.'+user2);
-            users[user1].room = rooms.length;
-            users[user2].room = rooms.length;
-        };
         var matchUser = function(userID){
-            if (!users.hasOwnProperty(userID)) throw new Error('Key not found idiot');
-            if (users[userID].meta.connected) throw new Error('User already connected idiot to '+users[userID].connected);
-
+            if (!users.hasOwnProperty(userID)) {
+                return console.log('Key not found idiot');
+            }
+            if (users[userID].meta.connected) {
+                return console.log('User already connected idiot to '+users[userID].connected);
+            }
             for(var key in users){
                 //TODO Add matching validation check
                 if (key == userID) continue;
                 if (!users.hasOwnProperty(key)) continue;
                 if (users[key].meta.connected) continue;
                 if (!users[key].sockets.length) continue;
-                // Get their sex and match against current user
-                //console.log(users[key]);
+                // TODO Get their preference and check against current user
                 if(!users[key].meta.connected){ // Added the latter option
                     console.log('Connection was made between '+userID+' and '+key);
                     users[key].meta.connected = userID;
                     users[userID].meta.connected = key;//
-                    //connectUsers(userID, key);
                     return true;
                 }
             }
@@ -194,17 +179,6 @@ var Cupids = function(_roomOptions){
                 });
             }
         };
-        var disconnectMultipleSocket = function(socketArray){
-            if (socketArray && socketArray.length){
-                socketArray.forEach(function(item){
-                    if (item && item.connected){
-                        item.emit(CONSTANTS.DISCONNECTION);
-
-                    }
-                });
-            }
-        };
-        var removeDeadSocket = function(username){};
         var sendUserNewMatches = function(){
             for (var key in users){
                 if (!users.hasOwnProperty(key)) throw new Error('Key not found idiot');
@@ -226,9 +200,44 @@ var Cupids = function(_roomOptions){
                 }
             }
         };
+        /**
+         * @description It checks if the all the disconnected sockets attached to a user
+         * @param key
+         * @returns {boolean}
+         */
+        var weedOutInactiveSocketForUser = function(key){
+            if (!users[key]) return false;
+            if (!users[key].sockets.length) return false;
+            var isActive = false;
+            var sockets = [];
+            console.log(key + ' has '+users[key].sockets.length+ ' sockets');
+            for (var i =0; i < users[key].sockets.length; i++){
+                if (users[key].sockets[i] && users[key].sockets[i].connected){
+                    sockets.push(users[key].sockets[i]);
+                    isActive = true;
+                }
+            }
+            users[key].sockets = sockets;
+            console.log('Now '+ key + ' has '+users[key].sockets.length+ ' sockets');
+        };
         return {
             resetUsers  : function(){
                 resetUsers();
+            },
+            weedOutInactiveSockets : function (){
+                var keys = Object.keys(users);
+                for (var i = 0; i < keys.length; i++){
+                    weedOutInactiveSocketForUser(keys[i]);
+                }
+            },
+            sendMessageToUserPartner : function(key, message){
+                if(!users[key]) return;
+                var partner = users[key].meta.connected;
+                sendToMultipleSockets(users[partner].sockets, CONSTANTS.MESSAGE_FOR_ME, message);
+            },
+            getUserPartnerID : function(key){
+                if(!users[key]) return null;
+                return users[key].meta.connected;
             },
             newShuffle : function(){
                 // Shuffle Algo - http://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
@@ -278,16 +287,15 @@ var Cupids = function(_roomOptions){
                 users = newusers;
                 console.log('Length of new users '+users.length);
             },
-            disconnectUser : function(cred){
-
-            },
             register :  function(cred, socket, _isUpdateCredentials){
                 var isUpdateCredentials = _isUpdateCredentials || false;
-                if (users[cred.id] && !isUpdateCredentials){
+                if (users[cred.id]){
                     users[cred.id].socket = socket;
                     users[cred.id].details = cred.details;
+                    /**
+                     * Add the socket to the existing sockets
+                     */
                     if (socket !== undefined) {
-                        users[cred.id].sockets = [];
                         users[cred.id].sockets.push(socket);
                     }
                     console.log('Updated user instead. '+cred.id);
@@ -300,22 +308,18 @@ var Cupids = function(_roomOptions){
                         connected : false,
                         liked : false
                     },
-                    socket : socket,
                     sockets : [],
                     room : cred.room,
+                    partner : null,
                     details : {}
                 };
-                console.log('Socket is '+socket);
                 if (socket !== undefined) {
-                    newUser.sockets.push('aa');
+                    newUser.sockets.push(socket);
                     console.log('Added socket')
                 }
                 users[cred.id] = newUser;
                 console.log('Create new user for User '+cred.id);
                 return true;
-            },
-            isUserExist: function(username){
-                return users.hasOwnProperty(username);
             },
             sendBroadcast : function(event, message){
                 nsp.emit(event, message);
@@ -324,21 +328,19 @@ var Cupids = function(_roomOptions){
             match : function(){
                 for (var key in users){
                     console.log('There are '+Object.keys(users).length+' users');
-                    if (!users.hasOwnProperty(key)) throw new Error('Key not found idiot');
-                    // If user is not connected and user has a valid socket connection
-                    if (!users[key].meta.connected && (users[key].socket && users[key].sockets.length)){ //users[key].sockets.length
+                    if (!users.hasOwnProperty(key)) {
+                        console.log('Key not found. '+key);
+                        continue;
+                    }
+                    // If user is not matched to a partner and the user has a valid socket connection
+                    if (!users[key].meta.connected && users[key].sockets.length){
                         console.log('Evaluating User ID '+key);
                         matchUser(key);
                     } else {
-                        console.log('Evaluating User '+key+' doesnt qualify for matching. '+users[key].socket);
+                        console.log('Evaluating User '+key+' doesnt qualify for matching.');
                     }
                 }
                 sendUserNewMatches();
-            },
-            sendMessageToUser: function(username, message){
-                //console.log('attempting to send ' + JSON.stringify(message) + ' to ' + username);
-                if(!users[username]) throw new Error('User not found');
-                sendToMultipleSockets(users[username].sockets, CONSTANTS.MESSAGE_FOR_ME, message);
             },
             sendSystemMessageToUser: function(userID, event, message){
                 sendToMultipleSockets(users[userID].sockets, event, message);
@@ -346,12 +348,15 @@ var Cupids = function(_roomOptions){
             isMatchExist: function(user1, user2){
                 return ((users[user1].meta.liked == user2) && (users[user2].meta.liked == user1));
             },
-            likeUser: function(liker, likee){
+            likeUser: function(liker, likee, sendNotification){
                 users[liker].meta.liked = likee;
-                Users.sendSystemMessageToUser(likee, CONSTANTS.LIKED, liker);
+                if (sendNotification){
+                    Users.sendSystemMessageToUser(likee, CONSTANTS.LIKED, liker);
+                }
             },
             getUserPinByUsername: function(username){
-                return users[username].pin;
+                return null;
+                //return users[username].pin;
             },
             removeUser: function(username){
                 if (users[username]){
@@ -367,7 +372,12 @@ var Cupids = function(_roomOptions){
             }
         }
     }();
-    function populateUsers (id, successCB, errorCB){
+
+    var populateUsers = function (id, successCB, errorCB){
+        /**
+         * Since we are not prepopulating the users, this function will resolve early
+         */
+        return successCB();
         // Store all the users already subscribed to that room
         console.log('Fetching Subscribers for room');
         //var sql = "SELECT u.* FROM users u ,room_user us where us.room_id = "+id+" and u.id = us.user_id";
@@ -384,14 +394,14 @@ var Cupids = function(_roomOptions){
             });
             successCB();
         });
-    }
-    function bindEvents(namespace){
+    };
+
+    var bindEvents = function(namespace){
         console.log('Setting up connection for the room '+roomObj.id);
         namespace.on('connection', function(socket){
             console.log('a user connected in '+room);
             socket.on(CONSTANTS.REGISTER, function(credentials){
-                console.log('User sent registration details '+credentials);
-                credentials.id = format(credentials.id);
+                console.log('User sent registration details '+JSON.stringify(credentials));
                 var roomWelcome = function(){
                     console.log('Sending welcome message');
                     Users.sendSystemMessageToUser(credentials.id, CONSTANTS.INTERNAL, "Welcome to Chat Roulette");
@@ -443,18 +453,23 @@ var Cupids = function(_roomOptions){
             });
             socket.on(CONSTANTS.MESSAGE, function(data){
                 // Send msg only if we are in chatting mode
-                if (chatInProgress){
-                    Users.sendMessageToUser(data.target, data.message);
-                }
+                // Get the user and send message to the match
+                console.log('New message '+JSON.stringify(data));
+                //if (chatInProgress){
+                    //Users.sendMessageToUser(data.id, data.message);
+                    Users.sendMessageToUserPartner(data.id, data.message);
+                //}
             });
             socket.on(CONSTANTS.LIKED, function(data){
-                data.username = format(data.username);
                 if (!chatInProgress) return;
-                Users.likeUser(data.username, data.target);
-                if(Users.isMatchExist(data.username, data.target)){
-                    Users.sendSystemMessageToUser(data.username, CONSTANTS.MATCHED, Users.getUserPinByUsername(data.target));
-                    Users.sendSystemMessageToUser(data.target, CONSTANTS.MATCHED, Users.getUserPinByUsername(data.username));
-                    saveMatch(data.username, data.target, room);
+                var partner  = Users.getUserPartnerID(data.id);
+                Users.likeUser(data.id, partner, false);
+                if(Users.isMatchExist(data.id, partner)){
+                    Users.sendSystemMessageToUser(data.id, CONSTANTS.MATCHED);
+                    Users.sendSystemMessageToUser(partner, CONSTANTS.MATCHED);
+                    saveMatch(data.id, partner, room);
+                } else {
+                    Users.likeUser(data.id, partner, true);
                 }
             });
             socket.on(CONSTANTS.QUIT, function(username){
@@ -463,24 +478,23 @@ var Cupids = function(_roomOptions){
             });
             socket.on(CONSTANTS.INTERNAL, function(username, message){
                 Users.sendSystemMessageToUser(username, CONSTANTS.INTERNAL, message);
-            })
+            });
         });
-    }
+    };
+
     bindEvents(nsp);
+
     populateUsers(room, function(){
         cupid();
     });
 };
 
-function updateRoomStatus(roomID, status){
-    var sql = "UPDATE rooms set STATUS = "+status+" WHERE ID = "+roomID;
-    query(sql);
-}
-
-var runningInstances = [];
-function start(){
+/**
+ * Fetch all the valid rooms
+ */
+var start = function(){
     console.log('Fetching rooms');
-    var sql = "SELECT * from rooms";// status <> "+ROOM_STATUS.PENDING; // where query = complex bla bla
+    var sql = "SELECT * from rooms";
     query(sql, function(data){
         console.log('Number of Rooms = '+data.length);
         if (data.length){
@@ -490,19 +504,19 @@ function start(){
             /*
             Validate that rooms arte meant to run at specific time
             data.forEach(function(item){
-             */
-                // TODO Spin up if current time is between the item's start and end time
-                /*if (isValidDate(item.start_date, item.end_date)){
+
+                if (isValidDate(item.start_date, item.end_date)){
                     var cup = new Cupids(item);
                     updateRoomStatus(item.id, ROOM_STATUS.ACTIVE);
                     runningInstances.push({id:item.id, ref : cup});
-                }* /
+                }
                 // return new Cupids(item);
-            }); */
+            });
             //console.log('Number of running rooms = '+runningInstances.length);
+            */
         }
     });
-}
+};
 
 http.listen(port, function(){
     console.log('listening on http://localhost:'+port);

@@ -21,13 +21,20 @@ Route::group(['prefix' => 'auth'], function () {
     Route::put('register', 'AuthenticateController@register');
 });
 
-// MANAGE PROFILE
+// M A N A G E  P R O F I L E
 Route::put('profile', 'RoomController@UpdateProfile')->middleware('api.auth');;
 Route::get('profile', 'RoomController@getProfile')->middleware('api.auth');;
+
+// M A N A G E  C A T E G O R I E S
+Route::group(['prefix' => 'category'], function () {
+    Route::post('', 'RoomController@createCategory');
+    Route::get('', 'RoomController@getCategory');
+});
+
 // G E T  A L L  R O O M S
 Route::get('rooms', 'RoomController@getRooms');
 Route::get('room/{roomID}', 'RoomController@getRoomByID');
-Route::post('rooms', 'RoomController@createRoom')->middleware('api.auth');
+Route::post('rooms', 'RoomController@createRoom');
 Route::put('room/{roomID}', 'RoomController@editRoom');
 // R o o m  S u b s c i p t i o n
 Route::get('rooms/{roomID}/subscribers', 'RoomController@getRoomSubscribers');

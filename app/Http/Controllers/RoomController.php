@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Category;
 use App\Factories\RoomFactory;
 use App\Profile;
 use Illuminate\Http\Request;
@@ -67,6 +68,20 @@ class RoomController extends Controller
         } catch (\Exception $e) {
             return response($e->getMessage().$e->getTraceAsString(), 400);
         }
+    }
+    public function createCategory(Request $request){
+        $a = [
+            'name' => 'required'
+        ];
+         $validator = \Validator::make($request->all(), $a);
+        \Log::info('Creating category '.json_encode($request->all()));
+        if ($validator->fails()) {
+            throw new \Exception($validator->errors());
+        }
+        return Category::create($request->all());
+    }
+    public function getCategory(){
+        return Category::with(['rooms'])->get();
     }
     public function getUserMatches(RoomFactory $factory, Request $request){
         try {

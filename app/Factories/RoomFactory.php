@@ -12,17 +12,17 @@ class RoomFactory {
     // Room Management
     public function createRoom(array $data){
         $validator = \Validator::make($data, $this->validationRules("create"));
-
         \Log::info('Creating room '.json_encode($data));
         if ($validator->fails()) {
             throw new \Exception($validator->errors());
         }
         $room = Room::create($data);
-        $newData = [
-            'user_id' => $data['creator_id'],
+        /*$newData = [
+            //'user_id' => $data['creator_id'],
             'room_id' => $room->id
         ];
         $this->subscribeToRoom($newData);
+        */
         return $room;
     }
     public function getRooms(array $data){
@@ -112,7 +112,7 @@ class RoomFactory {
                     'description' => 'required',
                     'start_time' => 'required',
                     'end_time' => 'required',
-                    'creator_id' => 'required|integer',
+                    'category_id' => 'required|integer|exists:categories,id',
                 ];
                 break;
             case "subscribe":
