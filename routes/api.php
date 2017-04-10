@@ -19,6 +19,7 @@ Route::get('/user', function (Request $request) {
 Route::group(['prefix' => 'auth'], function () {
     Route::put('login', 'AuthenticateController@login');
     Route::put('register', 'AuthenticateController@register');
+    Route::put('social', 'AuthenticateController@social');
 });
 
 // M A N A G E  P R O F I L E

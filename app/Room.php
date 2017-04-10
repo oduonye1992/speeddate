@@ -14,4 +14,7 @@ class Room extends Model
     public function creator(){
         return $this->belongsTo('App\User', 'creator_id');
     }
+    public function category(){
+        return $this->belongsTo('App\Category', 'creator_id');
+    }
 }

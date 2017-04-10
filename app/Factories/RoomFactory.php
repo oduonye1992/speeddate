@@ -3,6 +3,7 @@
 namespace App\Factories;
 
 
+use App\Category;
 use App\Matches;
 use App\Profile;
 use App\Room;
@@ -26,7 +27,7 @@ class RoomFactory {
         return $room;
     }
     public function getRooms(array $data){
-        return Room::with(['creator'])->get();
+        return Category::with(['rooms'])->get();
     }
     public function editRoom($roomID, array $data){}
     public function getRoomByID($roomID){

@@ -80,4 +80,57 @@ class AuthenticateController extends Controller
         ];
         return response()->json($data);
     }
+    public function social(Request $request, JWTAuth $jw){
+        $credentials = [
+            'email' => $request->username,
+            'name' => isset($request->name) ? $request->name : '',
+            'password' => 'password'
+        ];
+        // Check if user exists
+        try {
+            // verify the credentials and create a token for the user
+            if (! $token = $jw->attempt($credentials)) {
+                // create the user
+                $credentials['password'] = Hash::make('password');
+                $user = User::create($credentials);
+                // Create the profile
+                $profileData = [
+                    'user_id' => $user->id,
+                    'bio' => isset($request->bio) ? $request->bio : null,
+                    'birthdate' => isset($request->birthdate) ? $request->birthdate : null,
+                    'gender' => isset($request->gender) ? $request->gender : null,
+                    'image' => isset($request->image) ? $request->image : null,
+                    'phone' => isset($request->phone) ? $request->phone : null,
+                ];
+                $profile = Profile::create($profileData);
+                $credentials['password'] = 'password';
+                try {
+                    if (!$_token = $jw->attempt($credentials)) {
+                        return response()->json(['error' => 'invalid_credentials'], 401);
+                    }
+                } catch (JWTException $e) {
+                    return response()->json(['error' => 'could_not_create_token', 'message' => $e->getMessage()], 500);
+                }
+                $data = [
+                    'user' => $user,
+                    'extra' => compact('token'),
+                    'profile' => $profile
+                ];
+                return response()->json($data);
+            } else {
+                $user = $jw->authenticate($token);
+                $profile = Profile::where('user_id', $user->id)->get()[0];
+                $data = [
+                    'user' => $user,
+                    'extra' => compact('token'),
+                    'profile' => $profile
+                ];
+                return response()->json($data);
+            }
+        } catch (JWTException $e) {
+            // something went wrong
+            return response()->json(['error' => 'could_not_create_token'], 500);
+        }
+    }
+
 }

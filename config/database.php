@@ -64,6 +64,7 @@ return [
             'prefix' => '',
             'strict' => true,
             'engine' => null,
+            'unix_socket' => env('MYSQL_SOCK', '')
         ],
 
         'pgsql' => [
