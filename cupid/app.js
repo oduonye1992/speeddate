@@ -7,11 +7,12 @@ var moment                  = require('moment');
 var port                    = 8013;
 var runningInstances = [];
 var pattern = 'dddd[,] MMMM Do YYYY h:mm A';
+var mode = "dev";
 var connectionDetails = {
     host: "localhost",
     port:"3307",
     user: "root",
-    password: "s0ftware!",
+    password: mode == "dev" ? "s0ftware!" : "mZWVnMvwYqTxdC",
     database: "sd"
 };
 var con = mysql.createConnection(connectionDetails);

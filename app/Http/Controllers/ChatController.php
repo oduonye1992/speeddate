@@ -9,7 +9,7 @@ use Validator;
 class ChatController extends Controller
 {
     public function read(Request $request){
-        return Chat::where('match_id', $request->match_id)->with(['user'])->get();
+        return Chat::where('match_id', $request->match_id)->with(['user'])->latest()->get();
     }
     public function add(Request $request) {
         $rules = [

@@ -70,7 +70,7 @@ class RoomFactory {
                 $id = $match['matcher_id'];
                 $ma = $match['matcher'];
                 $ma['id'] = $match['id'];
-                $profile = Profile::findOrFail($id);
+                $profile = Profile::where('user_id', $id)->get()[0];
                 $ma['profile'] = $profile;
                 array_push($friends, $ma);
                 array_push($alreadyAddedFriends, $id);
@@ -81,7 +81,7 @@ class RoomFactory {
                 $id = $match['user_id'];
                 $ma = $match['user'];
                 $ma['id'] = $match['id'];
-                $profile = Profile::findOrFail($id);
+                $profile = Profile::where('user_id', $id)->get()[0];
                 $ma['profile'] = $profile;
                 array_push($friends, $ma);
                 array_push($alreadyAddedFriends, $id);
