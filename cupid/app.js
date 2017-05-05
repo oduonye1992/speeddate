@@ -7,7 +7,7 @@ var moment                  = require('moment');
 var port                    = 8013;
 var runningInstances = [];
 var pattern = 'dddd[,] MMMM Do YYYY h:mm A';
-var mode = "dev";
+var mode = "prod";
 var connectionDetails = {
     host: "localhost",
     port: mode == "dev" ? "3307" : "3306",
@@ -158,7 +158,7 @@ var Cupids = function(_roomOptions){
             }
             for(var key in users){
                 //TODO Add matching validation check
-                // if (key == userID) continue;
+                if (key == userID) continue;
                 if (!users.hasOwnProperty(key)) continue;
                 if (users[key].meta.connected) continue;
                 if (!users[key].sockets.length) continue;
