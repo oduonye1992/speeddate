@@ -42,6 +42,7 @@ Route::get('rooms', 'RoomController@getRooms');
 Route::get('room/{roomID}', 'RoomController@getRoomByID');
 Route::post('rooms', 'RoomController@createRoom');
 Route::put('room/{roomID}', 'RoomController@editRoom');
+Route::get('bulk', 'RoomController@bulkInsert');
 // R o o m  S u b s c i p t i o n
 Route::get('rooms/{roomID}/subscribers', 'RoomController@getRoomSubscribers');
 Route::put('rooms/{roomID}/subscribe', 'RoomController@subscribeToRoom')->middleware('api.auth');

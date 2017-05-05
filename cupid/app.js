@@ -10,7 +10,7 @@ var pattern = 'dddd[,] MMMM Do YYYY h:mm A';
 var mode = "dev";
 var connectionDetails = {
     host: "localhost",
-    port:"3307",
+    port: mode == "dev" ? "3307" : "3306",
     user: "root",
     password: mode == "dev" ? "s0ftware!" : "mZWVnMvwYqTxdC",
     database: "sd"
@@ -23,7 +23,7 @@ var ROOM_STATUS = {
 };
 var CONSTANTS = {
     MESSAGE     : 'new_message',
-    MESSAGE_FOR_ME     : 'recieved_message',
+    MESSAGE_FOR_ME  : 'recieved_message',
     JOIN        : 'join',
     REGISTER    : 'register',
     CONNECTION  : 'connect',
@@ -41,7 +41,9 @@ var CONSTANTS = {
     INTERNAL : 'internal_message',
     USER_DISCONNECT : 'disconnect reallly this time',
     MATCHING : 'matching_users',
-    SEARCHING : 'No_Candidate_at_the_moment'
+    SEARCHING : 'No_Candidate_at_the_moment',
+    USER_EXCHANGE : 'user_exchange',
+    EXCHANGE     : 'exchange'
 };
 
 var query = function(sql, successCB, errorCB){
@@ -236,6 +238,11 @@ var Cupids = function(_roomOptions){
                 var partner = users[key].meta.connected;
                 sendToMultipleSockets(users[partner].sockets, CONSTANTS.MESSAGE_FOR_ME, message);
             },
+            sendExchangeToUserPartner : function(key, data){
+                if(!users[key]) return;
+                var partner = users[key].meta.connected;
+                sendToMultipleSockets(users[partner].sockets, CONSTANTS.USER_EXCHANGE, data);
+            },
             getUserPartnerID : function(key){
                 if(!users[key]) return null;
                 return users[key].meta.connected;
@@ -355,10 +362,6 @@ var Cupids = function(_roomOptions){
                     Users.sendSystemMessageToUser(likee, CONSTANTS.LIKED, liker);
                 }
             },
-            getUserPinByUsername: function(username){
-                return null;
-                //return users[username].pin;
-            },
             removeUser: function(username){
                 if (users[username]){
                     // If there is an active chat already
@@ -452,6 +455,10 @@ var Cupids = function(_roomOptions){
             socket.on(CONSTANTS.DISCONNECTION, function(){
                 console.log('user Disconnected');
             });
+            socket.on(CONSTANTS.EXCHANGE, function(data){
+                console.log("Sending exchange data to user");
+                Users.sendExchangeToUserPartner(data.id, CONSTANTS.MATCHED);
+            });
             socket.on(CONSTANTS.MESSAGE, function(data){
                 // Send msg only if we are in chatting mode
                 // Get the user and send message to the match
@@ -505,7 +512,6 @@ var start = function(){
             /*
             Validate that rooms arte meant to run at specific time
             data.forEach(function(item){
-
                 if (isValidDate(item.start_date, item.end_date)){
                     var cup = new Cupids(item);
                     updateRoomStatus(item.id, ROOM_STATUS.ACTIVE);
@@ -525,6 +531,5 @@ http.listen(port, function(){
 
 //////////////////////////////////////// START HERE ////////////////////////////////////////
 start();
-
 
 

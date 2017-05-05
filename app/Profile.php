@@ -4,8 +4,7 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Profile extends Model
-{
+class Profile extends Model {
     protected $dates = ['deleted_at'];
     protected $table = "profiles";
     protected $fillable = [

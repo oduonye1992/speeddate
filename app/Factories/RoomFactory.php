@@ -4,6 +4,7 @@ namespace App\Factories;
 
 
 use App\Category;
+use App\Chat;
 use App\Matches;
 use App\Profile;
 use App\Room;
@@ -71,7 +72,10 @@ class RoomFactory {
                 $ma = $match['matcher'];
                 $ma['id'] = $match['id'];
                 $profile = Profile::where('user_id', $id)->get()[0];
+                $last_message = Chat::where('match_id', $match['id'])->with('user')->orderBy('created_at', 'desc')->get();
+                $last_message = count($last_message) > 0 ? $last_message[0] : new \stdClass;
                 $ma['profile'] = $profile;
+                $ma['last_message'] = $last_message;
                 array_push($friends, $ma);
                 array_push($alreadyAddedFriends, $id);
             } else {
@@ -83,6 +87,9 @@ class RoomFactory {
                 $ma['id'] = $match['id'];
                 $profile = Profile::where('user_id', $id)->get()[0];
                 $ma['profile'] = $profile;
+                $last_message = Chat::where('match_id', $match['id'])->with('user')->orderBy('created_at', 'desc')->get();
+                $last_message = count($last_message) > 0 ? $last_message[0] : new \stdClass;
+                $ma['last_message'] = $last_message;
                 array_push($friends, $ma);
                 array_push($alreadyAddedFriends, $id);
             }
