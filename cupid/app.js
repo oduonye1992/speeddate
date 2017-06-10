@@ -43,7 +43,8 @@ var CONSTANTS = {
     MATCHING : 'matching_users',
     SEARCHING : 'No_Candidate_at_the_moment',
     USER_EXCHANGE : 'user_exchange',
-    EXCHANGE     : 'exchange'
+    EXCHANGE     : 'exchange',
+    CANCEL_EXCHANGE : 'cancel_exchange'
 };
 
 var query = function(sql, successCB, errorCB){
@@ -78,7 +79,7 @@ var updateRoomStatus = function(roomID, status){
 var Cupids = function(_roomOptions){
     var room = _roomOptions.id;
     var roomObj = _roomOptions;
-    var timerCountdown          = 40;//seconds
+    var timerCountdown          = 60;//seconds
     var timerCountdownMs        = timerCountdown*1000;//ms
     var timerWaitingperiod      = 10;//seconds
     var timerWaitingperiodMs    = timerWaitingperiod*1000;//ms
@@ -158,11 +159,12 @@ var Cupids = function(_roomOptions){
             }
             for(var key in users){
                 //TODO Add matching validation check
-                if (key == userID) continue;
+                // if (key == userID) continue;
                 if (!users.hasOwnProperty(key)) continue;
                 if (users[key].meta.connected) continue;
                 if (!users[key].sockets.length) continue;
                 // TODO Get their preference and check against current user
+                // No neeed to do so as the the client will have restrictions befoe entering yhe room
                 if(!users[key].meta.connected){ // Added the latter option
                     console.log('Connection was made between '+userID+' and '+key);
                     users[key].meta.connected = userID;
@@ -241,7 +243,12 @@ var Cupids = function(_roomOptions){
             sendExchangeToUserPartner : function(key, data){
                 if(!users[key]) return;
                 var partner = users[key].meta.connected;
-                sendToMultipleSockets(users[partner].sockets, CONSTANTS.USER_EXCHANGE, data);
+                sendToMultipleSockets(users[partner].sockets, CONSTANTS.EXCHANGE, data);
+            },
+            sendExchangeCancelToUserPartner : function(){
+                if(!users[key]) return;
+                var partner = users[key].meta.connected;
+                sendToMultipleSockets(users[partner].sockets, CONSTANTS.CANCEL_EXCHANGE, data);
             },
             getUserPartnerID : function(key){
                 if(!users[key]) return null;
@@ -252,7 +259,6 @@ var Cupids = function(_roomOptions){
                 var fisherShuffle = function (sourceArray) {
                     for (var i = 0; i < sourceArray.length - 1; i++) {
                         var j = i + Math.floor(Math.random() * (sourceArray.length - i));
-
                         var temp = sourceArray[j];
                         sourceArray[j] = sourceArray[i];
                         sourceArray[i] = temp;
@@ -379,10 +385,10 @@ var Cupids = function(_roomOptions){
 
     var populateUsers = function (id, successCB, errorCB){
         /**
-         * Since we are not prepopulating the users, this function will resolve early
+         * Since we are not prepopulating the users for now, this function will resolve early
          */
         return successCB();
-        // Store all the users already subscribed to that room
+        /* Store all the users already subscribed to that room
         console.log('Fetching Subscribers for room');
         //var sql = "SELECT u.* FROM users u ,room_user us where us.room_id = "+id+" and u.id = us.user_id";
         var sql = "SELECT * FROM users";// u ,room_user us where us.room_id = "+id+" and u.id = us.user_id";
@@ -397,7 +403,7 @@ var Cupids = function(_roomOptions){
                 Users.register(userData);
             });
             successCB();
-        });
+        }); */
     };
 
     var bindEvents = function(namespace){
@@ -408,7 +414,7 @@ var Cupids = function(_roomOptions){
                 console.log('User sent registration details '+JSON.stringify(credentials));
                 var roomWelcome = function(){
                     console.log('Sending welcome message');
-                    Users.sendSystemMessageToUser(credentials.id, CONSTANTS.INTERNAL, "Welcome to Chat Roulette");
+                    Users.sendSystemMessageToUser(credentials.id, CONSTANTS.INTERNAL, "Welcome to Ping Pong!");
                 };
                 var roomStats = function(){
                     var message = "";
@@ -449,15 +455,19 @@ var Cupids = function(_roomOptions){
                 socket.emit(CONSTANTS.ROOM_STATUS, chatInProgress);
                 console.log('Updated user config');
             });
-            socket.on(CONSTANTS.JOIN, function(room){
-                socket.join(room);
+            socket.on(CONSTANTS.JOIN, function(data, callback){
+                // socket.join(room);
             });
             socket.on(CONSTANTS.DISCONNECTION, function(){
                 console.log('user Disconnected');
             });
             socket.on(CONSTANTS.EXCHANGE, function(data){
                 console.log("Sending exchange data to user");
-                Users.sendExchangeToUserPartner(data.id, CONSTANTS.MATCHED);
+                Users.sendExchangeToUserPartner(data.id, data.data);
+            });
+            socket.on(CONSTANTS.CANCEL_EXCHANGE, function(data){
+                console.log("Sending cancel exchange  to user");
+                Users.sendExchangeCancelToUserPartner(data.id);
             });
             socket.on(CONSTANTS.MESSAGE, function(data){
                 // Send msg only if we are in chatting mode
@@ -489,9 +499,8 @@ var Cupids = function(_roomOptions){
             });
         });
     };
-
     bindEvents(nsp);
-
+13
     populateUsers(room, function(){
         cupid();
     });
@@ -524,7 +533,6 @@ var start = function(){
         }
     });
 };
-
 http.listen(port, function(){
     console.log('listening on http://localhost:'+port);
 });
