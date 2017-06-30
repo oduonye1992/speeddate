@@ -7,7 +7,7 @@ var moment                  = require('moment');
 var port                    = 8013;
 var runningInstances = [];
 var pattern = 'dddd[,] MMMM Do YYYY h:mm A';
-var mode = "prod";
+var mode = "dev";
 var connectionDetails = {
     host: "localhost",
     port: mode == "dev" ? "3307" : "3306",
@@ -76,6 +76,29 @@ var updateRoomStatus = function(roomID, status){
     query(sql);
 };
 
+console.log('Starting Kafka');
+var kafka = require('kafka-node'),
+    Producer = kafka.Producer,
+    client = new kafka.Client('localhost:2181/'),
+    producer = new Producer(client);
+var canPostMesssages = false;
+
+producer.on('error', function (err) {
+    console.log('An error occured while starting kafka '+err);
+});
+var postToKafka = function(topic, message){
+    const payloads = [{
+        topic: topic,
+        messages: message, // multi messages should be a array, single message can be just a string or a KeyedMessage instance
+        key: 'theKey' // only needed when using keyed partitioner
+    }];
+    if (canPostMesssages){
+        producer.send(payloads, function (err, data) {
+            // console.log(data);
+        });
+    }
+};
+
 var Cupids = function(_roomOptions){
     var room = _roomOptions.id;
     var roomObj = _roomOptions;
@@ -96,6 +119,14 @@ var Cupids = function(_roomOptions){
                 var aa = setInterval(function(){
                     if (chatInProgress){
                         Users.sendBroadcast(CONSTANTS.TIMER, timerCountdown-index);
+                        postToKafka('room_'+room, JSON.stringify({
+                            mode : 'stats',
+                            data : {
+                                room : room,
+                                timer : timerCountdown-index,
+                                number_of_users : Users.getLength()
+                            }
+                        }));
                     }
                     if (index == timerCountdown-1){
                         index = 0;
@@ -278,6 +309,9 @@ var Cupids = function(_roomOptions){
                 }
                 users = returnObj;
             },
+            getLength : function(){
+                 return Object.keys(users).length
+            },
             shuffle : function(){
                 var tmpArr = [];
                 for(var key in users){
@@ -388,22 +422,6 @@ var Cupids = function(_roomOptions){
          * Since we are not prepopulating the users for now, this function will resolve early
          */
         return successCB();
-        /* Store all the users already subscribed to that room
-        console.log('Fetching Subscribers for room');
-        //var sql = "SELECT u.* FROM users u ,room_user us where us.room_id = "+id+" and u.id = us.user_id";
-        var sql = "SELECT * FROM users";// u ,room_user us where us.room_id = "+id+" and u.id = us.user_id";
-        query(sql, function(data){
-            console.log('Number of subscription = '+data.length);
-            data.forEach(function(item){
-                 var userData = {
-                     'id' : format(item.id),
-                     'name' : item.name,
-                     'room' : room
-                 };
-                Users.register(userData);
-            });
-            successCB();
-        }); */
     };
 
     var bindEvents = function(namespace){
@@ -500,7 +518,7 @@ var Cupids = function(_roomOptions){
         });
     };
     bindEvents(nsp);
-13
+
     populateUsers(room, function(){
         cupid();
     });
@@ -515,8 +533,22 @@ var start = function(){
     query(sql, function(data){
         console.log('Number of Rooms = '+data.length);
         if (data.length){
+            var roomIDs = [];
             data.forEach(function(item){
-                Cupids(item);
+                roomIDs.push('room_'+item.id);
+            });
+            // Create topics sync
+            console.log('Creating kafka topics for all rooms');
+            producer.createTopics(roomIDs, true, function (err, res) {
+                if (err) {
+                    console.log('Error occured while creating kafka topics '+err);
+                    return false;
+                }
+                console.log(res);
+                console.log('Starting each room');
+                data.forEach(function(_item){
+                    Cupids(_item);
+                });
             });
             /*
             Validate that rooms arte meant to run at specific time
@@ -538,6 +570,10 @@ http.listen(port, function(){
 });
 
 //////////////////////////////////////// START HERE ////////////////////////////////////////
-start();
+producer.on('ready', function () {
+    console.log('kafka is ready');
+    canPostMesssages = true;
+    start();
+});
 
 
