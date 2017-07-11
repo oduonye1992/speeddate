@@ -76,7 +76,8 @@ var updateRoomStatus = function(roomID, status){
     query(sql);
 };
 
-console.log('Starting Kafka');
+/*
+ console.log('Starting Kafka');
 var kafka = require('kafka-node'),
     Producer = kafka.Producer,
     client = new kafka.Client('localhost:2181/'),
@@ -98,6 +99,7 @@ var postToKafka = function(topic, message){
         });
     }
 };
+*/
 
 var Cupids = function(_roomOptions){
     var room = _roomOptions.id;
@@ -119,14 +121,14 @@ var Cupids = function(_roomOptions){
                 var aa = setInterval(function(){
                     if (chatInProgress){
                         Users.sendBroadcast(CONSTANTS.TIMER, timerCountdown-index);
-                        postToKafka('room_'+room, JSON.stringify({
+                        /*postToKafka('room_'+room, JSON.stringify({
                             mode : 'stats',
                             data : {
                                 room : room,
                                 timer : timerCountdown-index,
                                 number_of_users : Users.getLength()
                             }
-                        }));
+                        }));*/
                     }
                     if (index == timerCountdown-1){
                         index = 0;
@@ -229,6 +231,7 @@ var Cupids = function(_roomOptions){
                             details : connectedUser.details
                         };
                         console.log('Sending key '+CONSTANTS.CANDIDATE);
+                        console.log(userObj);
                         sendToMultipleSockets(users[key].sockets, CONSTANTS.CANDIDATE, userObj);
                     } else {
                         sendToMultipleSockets(users[key].sockets, CONSTANTS.SEARCHING, userObj);
@@ -359,7 +362,7 @@ var Cupids = function(_roomOptions){
                     sockets : [],
                     room : cred.room,
                     partner : null,
-                    details : {}
+                    details : cred.details
                 };
                 if (socket !== undefined) {
                     newUser.sockets.push(socket);
@@ -533,12 +536,16 @@ var start = function(){
     query(sql, function(data){
         console.log('Number of Rooms = '+data.length);
         if (data.length){
-            var roomIDs = [];
-            data.forEach(function(item){
-                roomIDs.push('room_'+item.id);
+            //var roomIDs = [];
+            data.forEach(function(_item){
+                Cupids(_item);
             });
             // Create topics sync
-            console.log('Creating kafka topics for all rooms');
+            //console.log('Creating kafka topics for all rooms');
+            /*
+             data.forEach(function(item){
+             roomIDs.push('room_'+item.id);
+             });
             producer.createTopics(roomIDs, true, function (err, res) {
                 if (err) {
                     console.log('Error occured while creating kafka topics '+err);
@@ -549,7 +556,7 @@ var start = function(){
                 data.forEach(function(_item){
                     Cupids(_item);
                 });
-            });
+            });*/
             /*
             Validate that rooms arte meant to run at specific time
             data.forEach(function(item){
@@ -570,10 +577,12 @@ http.listen(port, function(){
 });
 
 //////////////////////////////////////// START HERE ////////////////////////////////////////
+start();
+/*
 producer.on('ready', function () {
     console.log('kafka is ready');
-    canPostMesssages = true;
+    // canPostMesssages = true;
     start();
 });
-
+*/
 

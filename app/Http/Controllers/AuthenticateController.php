@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Profile;
+use App\Token;
 use App\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -103,6 +104,12 @@ class AuthenticateController extends Controller
                     'phone' => isset($request->phone) ? $request->phone : null,
                 ];
                 $profile = Profile::create($profileData);
+                if (isset($request->token)){
+                    Token::create([
+                        'user_id' => $user->id,
+                        'token' => $request->token
+                    ]);
+                }
                 $credentials['password'] = 'password';
                 try {
                     if (!$_token = $jw->attempt($credentials)) {
@@ -125,6 +132,12 @@ class AuthenticateController extends Controller
                     'extra' => compact('token'),
                     'profile' => $profile
                 ];
+                if (isset($request->token)){
+                    Token::create([
+                        'user_id' => $user->id,
+                        'token' => $request->token
+                    ]);
+                }
                 return response()->json($data);
             }
         } catch (JWTException $e) {

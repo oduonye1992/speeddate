@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Chat;
+use App\Matches;
+use App\Utility;
 use Illuminate\Http\Request;
 use Validator;
 
@@ -22,6 +24,17 @@ class ChatController extends Controller
             return $validator->errors()->all();
         }
         $chat = Chat::create($request->all());
+        $match = Matches::findOrFail($request->match_id);
+
+        try {
+            if ($match->user_id == $request->user_id){
+                Utility::notifyUser($match->matcher_id, $match->body);
+            } else {
+                Utility::notifyUser($match->user_id, $match->body);
+            }
+        } catch (\Exception $e){
+
+        }
         return Chat::with(['user'])->findOrFail($chat->id);
     }
 }
