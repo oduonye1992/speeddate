@@ -7,7 +7,7 @@ var moment                  = require('moment');
 var port                    = 8013;
 var runningInstances = [];
 var pattern = 'dddd[,] MMMM Do YYYY h:mm A';
-var mode = "prod";
+var mode = "dev";
 var connectionDetails = {
     host: "localhost",
     port: mode == "dev" ? "3307" : "3306",
@@ -165,7 +165,7 @@ var Cupids = function(_roomOptions){
     };
 
     var saveMatch = function(user1, user2, roomID){
-        var sql = "INSERT INTO matches (user_id, matcher_id, room_id) VALUES ("+strip(user1)+","+strip(user2)+", "+roomID+" )";
+        var sql = "INSERT INTO matches (user_id, matcher_id) VALUES ("+strip(user1)+","+strip(user2)+" )";
         console.log(sql);
         query(sql, function(){
             console.log('saved matches in room '+roomID+' between '+user1+' and '+user2);
@@ -536,39 +536,23 @@ var start = function(){
     query(sql, function(data){
         console.log('Number of Rooms = '+data.length);
         if (data.length){
-            //var roomIDs = [];
             data.forEach(function(_item){
                 Cupids(_item);
             });
-            // Create topics sync
-            //console.log('Creating kafka topics for all rooms');
-            /*
-             data.forEach(function(item){
-             roomIDs.push('room_'+item.id);
-             });
-            producer.createTopics(roomIDs, true, function (err, res) {
-                if (err) {
-                    console.log('Error occured while creating kafka topics '+err);
-                    return false;
-                }
-                console.log(res);
-                console.log('Starting each room');
-                data.forEach(function(_item){
-                    Cupids(_item);
-                });
-            });*/
-            /*
-            Validate that rooms arte meant to run at specific time
-            data.forEach(function(item){
-                if (isValidDate(item.start_date, item.end_date)){
-                    var cup = new Cupids(item);
-                    updateRoomStatus(item.id, ROOM_STATUS.ACTIVE);
-                    runningInstances.push({id:item.id, ref : cup});
-                }
-                // return new Cupids(item);
+        }
+    });
+    console.log('Fetching states');
+    var statesSql = "SELECT * from states";
+    query(statesSql, function(_data){
+        console.log('Number of states = '+_data.length);
+        if (_data.length){
+            var stateMap = _data.map(function(item){
+                item['id'] = item.code;
+                return item;
             });
-            //console.log('Number of running rooms = '+runningInstances.length);
-            */
+            stateMap.forEach(function(_item){
+                Cupids(_item);
+            });
         }
     });
 };

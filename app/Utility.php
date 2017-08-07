@@ -7,7 +7,7 @@
  */
 
 namespace App;
-
+use Illuminate\Support\Facades\Log;
 use OneSignal;
 class Utility
 {
@@ -17,5 +17,9 @@ class Utility
         foreach ($tokens as $token){
             OneSignal::sendNotificationToUser($message, $token->token, $url = null, $data = null, $buttons = null, $schedule = null);
         }
+    }
+
+    public static function log($message = "", $severity = "info"){
+        Log::info($message);
     }
 }

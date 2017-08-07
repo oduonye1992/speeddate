@@ -17,7 +17,4 @@ class Matches extends Model
     public function matcher(){
         return $this->belongsTo('App\User', 'matcher_id');
     }
-    public function room(){
-        return $this->belongsTo('App\Room', 'room_id');
-    }
 }

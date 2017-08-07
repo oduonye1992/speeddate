@@ -6,6 +6,7 @@ use App\Category;
 use App\Factories\RoomFactory;
 use App\Profile;
 use App\Room;
+use App\States;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
@@ -22,7 +23,7 @@ class RoomController extends Controller
 		"image": "https://unsplash.it/400/600?image=1008"
 	}, {
 		"name": "Love",
-		"description": "Falling in love with the right person is a very very good thing.",
+		"description": "Falling in love with the right person is a very good thing.",
 		"image": "https://unsplash.it/400/600?image=185"
 	}, {
 		"name": "Sex Talk",
@@ -30,7 +31,7 @@ class RoomController extends Controller
 		"image": "https://unsplash.it/400/600?image=1069"
 	}, {
 		"name": "Romance",
-		"description": "All the feels of muchy muchyness. ",
+		"description": "All the feels. ",
 		"image": "https://unsplash.it/400/600?image=1083"
 	}, {
 		"name": "Singles",
@@ -46,7 +47,7 @@ class RoomController extends Controller
 		"image": "https://unsplash.it/400/600?image=816"
 	}, {
 		"name": "Poetry",
-		"description": "Inter the innermost depth of the soul and connect on the deepest level ever",
+		"description": "Enter the innermost depth of the soul and connect on the deepest level ever",
 		"image": "https://unsplash.it/400/600?image=802"
 	}, {
 		"name": "Movies",
@@ -82,7 +83,7 @@ class RoomController extends Controller
 		"image": "https://unsplash.it/400/600?image=838"
 	}, {
 		"name": "Agony Aunt",
-		"description": "Pour your heart out. Its ok, we got you",
+		"description": "Pour your heart out. It's ok, we got you",
 		"image": "https://unsplash.it/400/600?image=1001"
 	}]
 }, {
@@ -90,7 +91,7 @@ class RoomController extends Controller
 	"description": "Meet Fellow football freaks",
 	"rooms": [{
 		"name": "Chelsea",
-		"description": "Up Chekpe, connect with your fellow Agberos",
+		"description": "Up Chelsea, connect with your fellow Agberos",
 		"image": "https://s-media-cache-ak0.pinimg.com/736x/c4/4d/71/c44d71f19c55fb94f97ed404a9679ed6.jpg"
 	}, {
 		"name": "Arsenal",
@@ -128,6 +129,14 @@ EOD;
                 ]);
             }
         }
+        $sampleStates = [
+            [
+                'title' => 'Lagos, Nigeria',
+                'code' => 'NG-LA'
+            ]
+        ];
+        States::insert($sampleStates);
+
         return response("All done", Response::HTTP_OK);
     }
     public function createRoom(Request $request, RoomFactory $factory){

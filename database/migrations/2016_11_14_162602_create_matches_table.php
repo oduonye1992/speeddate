@@ -18,11 +18,11 @@ class CreateMatchesTable extends Migration
             $table->timestamps();
             $table->integer('user_id')->unsigned();
             $table->integer('matcher_id')->unsigned();
-            $table->integer('room_id')->unsigned();
+            //$table->integer('room_id')->unsigned();
             $table->softDeletes();
             $table->foreign('user_id')->references('id')->on('users');
             $table->foreign('matcher_id')->references('id')->on('users');
-            $table->foreign('room_id')->references('id')->on('rooms');
+            //$table->foreign('room_id')->references('id')->on('rooms');
         });
     }
 

@@ -1,4 +1,4 @@
-var express = require('express');
+/*var express = require('express');
 var app = express();
 var fs = require('fs');
 var open = require('open');
@@ -70,3 +70,4 @@ io.on('connection', function(socket){
         to.emit('exchange', data);
     });
 });
+*/
