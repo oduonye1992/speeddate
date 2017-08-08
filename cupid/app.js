@@ -7,7 +7,7 @@ var moment                  = require('moment');
 var port                    = 8013;
 var runningInstances = [];
 var pattern = 'dddd[,] MMMM Do YYYY h:mm A';
-var mode = "dev";
+var mode = "prod";
 var connectionDetails = {
     host: "localhost",
     port: mode == "dev" ? "3307" : "3306",
