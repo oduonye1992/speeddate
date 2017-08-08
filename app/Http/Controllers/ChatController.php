@@ -25,15 +25,15 @@ class ChatController extends Controller
         }
         $chat = Chat::create($request->all());
         $match = Matches::findOrFail($request->match_id);
-
         try {
             if ($match->user_id == $request->user_id){
-                Utility::notifyUser($match->matcher_id, $match->body);
+                Utility::notifyUser($match->matcher_id, $request->body);
             } else {
-                Utility::notifyUser($match->user_id, $match->body);
+                Utility::notifyUser($match->user_id, $request->body);
             }
         } catch (\Exception $e){
-
+            Utility::log($match->matcher_id . ' ' . $request->body);
+            Utility::log($e);
         }
         return Chat::with(['user'])->findOrFail($chat->id);
     }

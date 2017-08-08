@@ -13,9 +13,11 @@ class Utility
 {
     public static function notifyUser($userID, $message = ""){
         // Fetch tokens for user
+        $user = User::findOrFail($userID);
         $tokens = Token::where('user_id', $userID)->get();
         foreach ($tokens as $token){
-            OneSignal::sendNotificationToUser($message, $token->token, $url = null, $data = null, $buttons = null, $schedule = null);
+            $name = $user->name;
+            OneSignal::sendNotificationToUser("$name just sent you a message", $token->token, $url = null, $data = null, $buttons = null, $schedule = null);
         }
     }
 

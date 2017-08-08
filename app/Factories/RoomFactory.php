@@ -60,7 +60,7 @@ class RoomFactory {
     }
 
     public function getUserMatches($userID){
-        $matches = Matches::where('user_id', $userID)->orWhere('matcher_id', $userID)->with(['user', 'matcher', 'room'])->get();
+        $matches = Matches::where('user_id', $userID)->orWhere('matcher_id', $userID)->with(['user', 'matcher'])->get();
         $friends = [];
         $alreadyAddedFriends = [];
         foreach ($matches as $match){

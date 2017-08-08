@@ -102,6 +102,7 @@ class AuthenticateController extends Controller
                     'gender' => isset($request->gender) ? $request->gender : null,
                     'state' => isset($request->state) ? $request->state : null,
                     'address' => isset($request->address) ? $request->address : null,
+                    'email' => isset($request->email) ? $request->email : null,
                     'image' => isset($request->image) ? $request->image : null,
                     'phone' => isset($request->phone) ? $request->phone : null,
                 ];

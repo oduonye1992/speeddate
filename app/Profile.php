@@ -9,7 +9,7 @@ class Profile extends Model {
     protected $table = "profiles";
     protected $fillable = [
         'user_id', 'bio', 'birthdate', 'gender', 'image', 'phone',
-        'address', 'state', 'country'
+        'address', 'state', 'country','email'
     ];
     public function user(){
         return $this->belongsTo('App\User', 'user_id');
