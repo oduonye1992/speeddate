@@ -193,7 +193,7 @@ var Cupids = function(_roomOptions){
             for(var key in users){
                 //TODO Add matching validation check
                 // if (key == userID) continue;
-                if (!users.hasOwnProperty(key)) continue;
+                // if (!users.hasOwnProperty(key)) continue;
                 if (users[key].meta.connected) continue;
                 if (!users[key].sockets.length) continue;
                 // TODO Get their preference and check against current user
