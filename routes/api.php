@@ -50,5 +50,6 @@ Route::post('rooms/{roomID}/unsubscribe', 'RoomController@leaveRoom');
 // Get User Matches
 Route::get('matches', 'RoomController@getUserMatches')->middleware('api.auth');;
 Route::post('myrooms', 'RoomController@getUserRooms');
+Route::post('unmatch', 'RoomController@unMatch');
 // H e l p e r s
 Route::get('is/{userID}/in/{roomID}', 'RoomController@isUserInRoom');

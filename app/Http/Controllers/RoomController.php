@@ -139,6 +139,9 @@ EOD;
 
         return response("All done", Response::HTTP_OK);
     }
+    public function unMatch(){
+
+    }
     public function createRoom(Request $request, RoomFactory $factory){
         try {
             $request['creator_id'] = $request['user_id'];
