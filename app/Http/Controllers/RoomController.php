@@ -3,12 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Category;
+use App\Chat;
 use App\Factories\RoomFactory;
+use App\Matches;
 use App\Profile;
 use App\Room;
 use App\States;
+use App\Utility;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Schema;
 
 class RoomController extends Controller
 {
@@ -139,8 +144,23 @@ EOD;
 
         return response("All done", Response::HTTP_OK);
     }
-    public function unMatch(){
-
+    public function unMatch(Request $request){
+        try {
+            $userID = $request['user_id'];
+            $partnerID = $request['partner_id'];
+            Utility::log("partner is ".$request['partner_id']." user id is ".$userID);
+            $matches = Matches::where([['user_id', '=', $userID], ['matcher_id', '=', $partnerID]])
+                ->orWhere([['matcher_id', '=', $userID], ['user_id', '=', $partnerID]])
+                ->get();
+            Utility::log("matches is ".json_encode($matches));
+            foreach ($matches as $match){
+                $match->delete();
+            }
+            return ["status"=>"ok"];
+        } catch( \Exception $e){
+             Utility::log($e->getMessage().$e->getTraceAsString());
+             return response('An error has occured', 500);
+        }
     }
     public function createRoom(Request $request, RoomFactory $factory){
         try {

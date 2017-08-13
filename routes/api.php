@@ -26,6 +26,13 @@ Route::group(['prefix' => 'auth'], function () {
 Route::put('profile', 'RoomController@UpdateProfile')->middleware('api.auth');
 Route::get('profile', 'RoomController@getProfile')->middleware('api.auth');
 
+// Phone home
+Route::get('phone_home', function(){
+    return [
+        "status" => "ok"
+    ];
+})->middleware('api.auth');
+
 // M A N A G E  C A T E G O R I E S
 Route::group(['prefix' => 'category'], function () {
     Route::post('', 'RoomController@createCategory');
@@ -50,6 +57,6 @@ Route::post('rooms/{roomID}/unsubscribe', 'RoomController@leaveRoom');
 // Get User Matches
 Route::get('matches', 'RoomController@getUserMatches')->middleware('api.auth');;
 Route::post('myrooms', 'RoomController@getUserRooms');
-Route::post('unmatch', 'RoomController@unMatch');
+Route::put('unmatch', 'RoomController@unMatch')->middleware('api.auth');
 // H e l p e r s
 Route::get('is/{userID}/in/{roomID}', 'RoomController@isUserInRoom');

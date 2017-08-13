@@ -75,6 +75,7 @@ class RoomFactory {
                 $last_message = Chat::where('match_id', $match['id'])->with('user')->orderBy('created_at', 'desc')->get();
                 $last_message = count($last_message) > 0 ? $last_message[0] : new \stdClass;
                 $ma['profile'] = $profile;
+                $ma['partner_id'] = $userID;
                 $ma['last_message'] = $last_message;
                 array_push($friends, $ma);
                 array_push($alreadyAddedFriends, $id);
@@ -87,6 +88,7 @@ class RoomFactory {
                 $ma['id'] = $match['id'];
                 $profile = Profile::where('user_id', $id)->get()[0];
                 $ma['profile'] = $profile;
+                $ma['partner_id'] = $id;
                 $last_message = Chat::where('match_id', $match['id'])->with('user')->orderBy('created_at', 'desc')->get();
                 $last_message = count($last_message) > 0 ? $last_message[0] : new \stdClass;
                 $ma['last_message'] = $last_message;

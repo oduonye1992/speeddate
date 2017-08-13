@@ -4,9 +4,11 @@ var http                    = require('http').Server(app);
 var io                      = require('socket.io')(http);
 var mysql                   = require("mysql"); // Sorry I don't just fancy the whole mongo stuff
 var moment                  = require('moment');
-var port                    = 8013;
+var Slack = require('slack-node');
+var port  = 8013;
 var runningInstances = [];
 var pattern = 'dddd[,] MMMM Do YYYY h:mm A';
+var slack_webhook_url = "https://hooks.slack.com/services/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";
 var mode = "prod";
 var connectionDetails = {
     host: "localhost",
@@ -44,7 +46,8 @@ var CONSTANTS = {
     SEARCHING : 'No_Candidate_at_the_moment',
     USER_EXCHANGE : 'user_exchange',
     EXCHANGE     : 'exchange',
-    CANCEL_EXCHANGE : 'cancel_exchange'
+    CANCEL_EXCHANGE : 'cancel_exchange',
+    USER_COUNT : 'user_count'
 };
 
 var query = function(sql, successCB, errorCB){
@@ -76,6 +79,10 @@ var updateRoomStatus = function(roomID, status){
     query(sql);
 };
 
+
+var slack = new Slack();
+slack.setWebhook(slack_webhook_url);
+
 /*
  console.log('Starting Kafka');
 var kafka = require('kafka-node'),
@@ -104,7 +111,7 @@ var postToKafka = function(topic, message){
 var Cupids = function(_roomOptions){
     var room = _roomOptions.id;
     var roomObj = _roomOptions;
-    var timerCountdown          = 60;//seconds
+    var timerCountdown          = 90;//seconds
     var timerCountdownMs        = timerCountdown*1000;//ms
     var timerWaitingperiod      = 10;//seconds
     var timerWaitingperiodMs    = timerWaitingperiod*1000;//ms
@@ -192,8 +199,8 @@ var Cupids = function(_roomOptions){
             }
             for(var key in users){
                 //TODO Add matching validation check
-                // if (key == userID) continue;
-                // if (!users.hasOwnProperty(key)) continue;
+                if (key == userID) continue;
+                if (!users.hasOwnProperty(key)) continue;
                 if (users[key].meta.connected) continue;
                 if (!users[key].sockets.length) continue;
                 // TODO Get their preference and check against current user
@@ -350,26 +357,39 @@ var Cupids = function(_roomOptions){
                         users[cred.id].sockets.push(socket);
                     }
                     console.log('Updated user instead. '+cred.id);
-                    return true;
+                } else {
+                    var newUser = {
+                        id : cred.id,
+                        name : cred.name,
+                        meta : {
+                            connected : false,
+                            liked : false
+                        },
+                        sockets : [],
+                        room : cred.room,
+                        partner : null,
+                        details : cred.details
+                    };
+                    if (socket !== undefined) {
+                        newUser.sockets.push(socket);
+                        console.log('Added socket')
+                    }
+                    users[cred.id] = newUser;
+                    console.log('Create new user for User '+cred.id);
                 }
-                var newUser = {
-                    id : cred.id,
-                    name : cred.name,
-                    meta : {
-                        connected : false,
-                        liked : false
-                    },
-                    sockets : [],
-                    room : cred.room,
-                    partner : null,
-                    details : cred.details
-                };
-                if (socket !== undefined) {
-                    newUser.sockets.push(socket);
-                    console.log('Added socket')
-                }
-                users[cred.id] = newUser;
-                console.log('Create new user for User '+cred.id);
+                var userCount = this.getLength();
+                setTimeout(function(){
+                    Users.sendBroadcast(CONSTANTS.USER_COUNT, userCount);
+                }, 3000);
+                console.log("Number of users = "+userCount);
+                slack.webhook({
+                    channel: "#online",
+                    username: "sneakyspy",
+                    text: cred.details.user.name+" just joined the room "+_roomOptions.id
+                }, function(err, response) {
+                    //console.log(response);
+                    console.log("Posted to slack");
+                });
                 return true;
             },
             sendBroadcast : function(event, message){
@@ -561,6 +581,7 @@ http.listen(port, function(){
 });
 
 //////////////////////////////////////// START HERE ////////////////////////////////////////
+
 start();
 /*
 producer.on('ready', function () {

@@ -20,8 +20,8 @@ class CreateChatTable extends Migration
             $table->integer('match_id')->unsigned();
             $table->integer('user_id')->unsigned();
             $table->longText('body');
-            $table->foreign('user_id')->references('id')->on('users');
-            $table->foreign('match_id')->references('id')->on('matches');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('match_id')->references('id')->on('matches')->onDelete('cascade');
         });
     }
 
