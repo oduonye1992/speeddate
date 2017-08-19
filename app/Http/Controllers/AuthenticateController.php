@@ -123,7 +123,9 @@ class AuthenticateController extends Controller
                 }
                 $data = [
                     'user' => $user,
-                    'extra' => compact('token'),
+                    'extra' => [
+                        "token" => $_token
+                    ],
                     'profile' => $profile
                 ];
                 return response()->json($data);
